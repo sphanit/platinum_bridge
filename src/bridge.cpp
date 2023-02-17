@@ -1,3 +1,29 @@
+#include <bridge.h>
+#define NS "/move_base/HATebLocalPlannerROS/"
+
+PlatinumToCohan::PlatinumToCohan(){
+  ros::NodeHandle nh;
+}
+
+PlatinumToCohan::~PlatinumToCohan(){
+  delete doc_;
+}
+
+bool PlatinumToCohan::readXMLData(){
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -8,8 +34,6 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   std::string global_name, relative_name, default_param;
   double vel;
-  // std::vector<std::string> keys;
-  // ros::param::search(keys);
 
   if(nh.getParam("/move_base/HATebLocalPlannerROS/max_vel_x", vel))
   {
@@ -26,28 +50,3 @@ int main(int argc, char** argv)
   return 0;
 
 }
-
-// if (ros::param::get("relative_name", relative_name))
-// {
-// ...
-// }
-
-// Default value version
-// ros::param::param<std::string>("default_param", default_param, "default_value");
-
-
-// Setting ###############
-// ros::param::set("/global_param", 5);
-// ros::param::set("relative_param", "my_string");
-// ros::param::set("bool_param", false);
-
-
-//Checking #############
-
-// if (ros::param::has("my_param"))
-// {
-//   ...
-// }
-
-// std::string param;
-// ros::param::get("~private_name", param);

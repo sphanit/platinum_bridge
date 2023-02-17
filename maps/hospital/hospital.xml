@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+
+<map_name name="hospital"/>
+
+<!-- Define the robot params based on the type of task -->
+<tasks>
+  <task type="social">
+    <parameters plist="l1 l1 l1 l1 l1 l1 l1 l1"/>
+  </task>
+  <task type="technical">
+    <parameters plist="l3 l3 l3 l3 l3 l3 l3 l3"/>
+  </task>
+  <task type="interaction">
+    <parameters plist="l2 l2 l2 l2 l2 l2 l2 l2"/>
+  </task>
+</tasks>
+
+<!-- Define the paramaters for different types of humans -->
+<humans>
+  <human type="fragile">
+    <parameters plist="l3 l1 l1 l1 l1 l1 l1 l3"/>
+  </human>
+  <human type="average">
+    <parameters plist="l2 l2 l2 l2 l2 l2 l2 l2"/>
+  </human>
+  <human type="reliable">
+    <parameters plist="l1 l3 l3 l3 l3 l3 l3 l1"/>
+  </human>
+</humans>
+
+<!-- Define the social norm levels in different contexts -->
+<contexts>
+  <context type="SF">
+    <parameters plist="l3 l3 l3 l3"/>
+  </context>
+  <context type="SA">
+    <parameters plist="l2 l2 l3 l3"/>
+  </context>
+  <context type="SR">
+    <parameters plist="l1 l2 l2 l2"/>
+  </context>
+
+  <!-- Define Others -->
+
+</contexts>

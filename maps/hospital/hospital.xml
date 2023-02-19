@@ -5,39 +5,96 @@
 <!-- Define the robot params based on the type of task -->
 <tasks>
   <task type="social">
-    <parameters plist="l1 l1 l1 l1 l1 l1 l1 l1"/>
+    <param name="vel_x" level="l1"/>
+    <param name="vel_x_back" level="l1"/>
+    <param name="vel_y" level="l1"/>
+    <param name="ang_vel" level="l1"/>
+    <param name="acc_x" level="l1"/>
+    <param name="acc_y" level="l1"/>
+    <param name="plan_horz" level="l1"/>
+    <param name="band" level="l1"/>
   </task>
   <task type="technical">
-    <parameters plist="l3 l3 l3 l3 l3 l3 l3 l3"/>
+    <param name="vel_x" level="l3"/>
+    <param name="vel_x_back" level="l3"/>
+    <param name="vel_y" level="l3"/>
+    <param name="ang_vel" level="l3"/>
+    <param name="acc_x" level="l3"/>
+    <param name="acc_y" level="l3"/>
+    <param name="plan_horz" level="l3"/>
+    <param name="band" level="l3"/>
   </task>
   <task type="interaction">
-    <parameters plist="l2 l2 l2 l2 l2 l2 l2 l2"/>
+    <param name="vel_x" level="l2"/>
+    <param name="vel_x_back" level="l2"/>
+    <param name="vel_y" level="l2"/>
+    <param name="ang_vel" level="l2"/>
+    <param name="acc_x" level="l2"/>
+    <param name="acc_y" level="l2"/>
+    <param name="plan_horz" level="l2"/>
+    <param name="band" level="l2"/>
   </task>
 </tasks>
 
 <!-- Define the paramaters for different types of humans -->
 <humans>
   <human type="fragile">
-    <parameters plist="l3 l1 l1 l1 l1 l1 l1 l3"/>
+    <!-- <parameters plist="l3 l1 l1 l1 l1 l1 l1 l3"/> -->
+    <param name="radius" level="l3"/>
+    <param name="vel_x" level="l1"/>
+    <param name="vel_x_nominal" level="l1"/>
+    <param name="vel_x_back" level="l1"/>
+    <param name="vel_y" level="l1"/>
+    <param name="ang_vel" level="l1"/>
+    <param name="fov" level="l1"/>
+    <param name="band" level="l3"/>
   </human>
   <human type="average">
-    <parameters plist="l2 l2 l2 l2 l2 l2 l2 l2"/>
+    <!-- <parameters plist="l2 l2 l2 l2 l2 l2 l2 l2"/> -->
+    <param name="radius" level="l2"/>
+    <param name="vel_x" level="l2"/>
+    <param name="vel_x_nominal" level="l2"/>
+    <param name="vel_x_back" level="l2"/>
+    <param name="vel_y" level="l2"/>
+    <param name="ang_vel" level="l2"/>
+    <param name="fov" level="l2"/>
+    <param name="band" level="l2"/>
   </human>
   <human type="reliable">
-    <parameters plist="l1 l3 l3 l3 l3 l3 l3 l1"/>
+    <!-- <parameters plist="l1 l3 l3 l3 l3 l3 l3 l1"/> -->
+    <param name="radius" level="l1"/>
+    <param name="vel_x" level="l3"/>
+    <param name="vel_x_nominal" level="l3"/>
+    <param name="vel_x_back" level="l3"/>
+    <param name="vel_y" level="l3"/>
+    <param name="ang_vel" level="l3"/>
+    <param name="fov" level="l3"/>
+    <param name="band" level="l1"/>
   </human>
 </humans>
 
 <!-- Define the social norm levels in different contexts -->
 <contexts>
-  <context type="SF">
-    <parameters plist="l3 l3 l3 l3"/>
+  <context type="social_fragile">
+    <!-- <parameters plist="l3 l3 l3 l3"/> -->
+    <param name="safety" level="l3"/>
+    <param name="visibility" level="l3"/>
+    <param name="passby" level="l3"/>
+    <param name="invis_humans" level="l3"/>
   </context>
-  <context type="SA">
-    <parameters plist="l2 l2 l3 l3"/>
+  <context type="social_average">
+    <!-- <parameters plist="l2 l2 l3 l3"/> -->
+    <param name="safety" level="l2"/>
+    <param name="visibility" level="l2"/>
+    <param name="passby" level="l3"/>
+    <param name="invis_humans" level="l3"/>
   </context>
-  <context type="SR">
-    <parameters plist="l1 l2 l2 l2"/>
+  <context type="social_reliable">
+    <!-- <parameters plist="l1 l2 l2 l2"/> -->
+    <param name="safety" level="l1"/>
+    <param name="visibility" level="l2"/>
+    <param name="passby" level="l2"/>
+    <param name="invis_humans" level="l2"/>
   </context>
 
   <!-- Define Others -->

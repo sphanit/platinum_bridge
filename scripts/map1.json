@@ -1,0 +1,121 @@
+[{
+  "_id": {
+    "oid": "63f113a3e04271e682ba9240"
+  },
+  "label": "farmacy",
+  "description": "Corridor location of the farmacy entrance",
+  "coordinates": [
+    92,
+    96
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9241"
+  },
+  "label": "farmacy_hri",
+  "description": "Central location of the farmacy room",
+  "coordinates": [
+    10,
+    2.5
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9242"
+  },
+  "label": "farmacy_user",
+  "description": "Location in front of the farmacy user",
+  "coordinates": [
+    100,
+    7
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9243"
+  },
+  "label": "room1",
+  "description": "Corridor location of room1",
+  "coordinates": [
+    35,
+    54
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9244"
+  },
+  "label": "room1_hri",
+  "description": "Central location of room1",
+  "coordinates": [
+    44,
+    87
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9245"
+  },
+  "label": "room1_user",
+  "description": "Location in front of the room1 user",
+  "coordinates": [
+    84,
+    39
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9246"
+  },
+  "label": "room2",
+  "description": "Corridor location of room2",
+  "coordinates": [
+    32,
+    95
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9247"
+  },
+  "label": "room2_hri",
+  "description": "Central location of room2",
+  "coordinates": [
+    29,
+    54
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9248"
+  },
+  "label": "room2_user",
+  "description": "Location in front of the room2 user",
+  "coordinates": [
+    85,
+    86
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba9249"
+  },
+  "label": "room3",
+  "description": "Corridor location of room3",
+  "coordinates": [
+    89,
+    91
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba924a"
+  },
+  "label": "room3_hri",
+  "description": "Central location of room3",
+  "coordinates": [
+    46,
+    79
+  ]
+},{
+  "_id": {
+    "oid": "63f113a4e04271e682ba924b"
+  },
+  "label": "room3_user",
+  "description": "Location in front of the room3 user",
+  "coordinates": [
+    64,
+    15
+  ]
+}]

@@ -77,10 +77,9 @@ bool PlatinumToCohan::readContextXML(){
     if(NULL != l_param->Attribute("type")){
       string t_name_ = l_param->Attribute("type");
       TiXmlElement* l_plist = l_param->FirstChildElement("param");
-
+      NamedLevel tmp;
       while(l_plist){
         string name_ = l_plist->Attribute("name");
-        NamedLevel tmp;
         tmp[name_] = this->toLevel(l_plist->Attribute("level"));
         tasks_[t_name_] = tmp;
         l_plist = l_plist->NextSiblingElement("param");
@@ -95,10 +94,9 @@ bool PlatinumToCohan::readContextXML(){
     if(NULL != l_param->Attribute("type")){
       string t_name_ = l_param->Attribute("type");
       TiXmlElement* l_plist = l_param->FirstChildElement("param");
-
+      NamedLevel tmp;
       while(l_plist){
         string name_ = l_plist->Attribute("name");
-        NamedLevel tmp;
         tmp[name_] = this->toLevel(l_plist->Attribute("level"));
         humans_[t_name_] = tmp;
         l_plist = l_plist->NextSiblingElement("param");
@@ -113,10 +111,9 @@ bool PlatinumToCohan::readContextXML(){
     if(NULL != l_param->Attribute("type")){
       string t_name_ = l_param->Attribute("type");
       TiXmlElement* l_plist = l_param->FirstChildElement("param");
-
+      NamedLevel tmp;
       while(l_plist){
         string name_ = l_plist->Attribute("name");
-        NamedLevel tmp;
         tmp[name_] = this->toLevel(l_plist->Attribute("level"));
         contexts_[t_name_] = tmp;
         l_plist = l_plist->NextSiblingElement("param");
@@ -215,8 +212,6 @@ Level PlatinumToCohan::toLevel(string s){
   else if(s=="l3")
     lv = LV3;
 
-    cout << lv << endl;
-
   return lv;
 }
 
@@ -239,8 +234,8 @@ bool PlatinumToCohan::setParams(){
 
   int i = 0;
   for(auto iter = cohan_params_.RParam.begin();iter!=cohan_params_.RParam.end();iter++){
-    cout << iter->second[int(tasks_[context.task][iter->first])] << endl;
-    cout << robot_param_names_[iter->first] << endl;
+    // cout << iter->second[int(tasks_[context.task][iter->first])] << endl;
+    // cout << robot_param_names_[iter->first] << endl;
     nh.setParam(NS+robot_param_names_[iter->first],iter->second[int(tasks_[context.task][iter->first])]);
     i++;
   }
@@ -257,7 +252,7 @@ bool PlatinumToCohan::setParams(){
     i++;
   }
 
-  ROS_INFO("Params updated!\n Task:%s Human:%s",context.task.c_str(), context.human_type.c_str());
+  ROS_INFO("Params updated --> Task:%s Human:%s",context.task.c_str(), context.human_type.c_str());
 }
 
 void  PlatinumToCohan::setContext(const roxanne_rosjava_msgs::TokenExecution &token){

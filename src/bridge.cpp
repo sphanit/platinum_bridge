@@ -279,10 +279,10 @@ void PlatinumToCohan::sendGoalToBase(){
     goal.target_pose.pose.orientation.w = 1.0;
 
     // Need boost::bind to pass in the 'this' pointer
-    MB_action_client.sendGoal(goal, boost::bind(&PlatinumToCohan::doneCb, this, _1, _2),
+    MB_action_client.sendGoal(goal,boost::bind(&PlatinumToCohan::doneCb, this, _1, _2),
                               boost::bind(&PlatinumToCohan::activeCb, this),
                               MoveBaseClient::SimpleFeedbackCallback()
-                              // boost::bind(&MultiPlanner::feedbackCb, this, _1)
+                              // boost::bind(&PlatinumToCohan::feedbackCb, this, _1)
                             );
 
   }
@@ -299,9 +299,9 @@ void PlatinumToCohan::doneCb(const actionlib::SimpleClientGoalState& state, cons
   send_feedback_token_.publish(token_feedback_);
 }
 
-// void PlatinumToCohan::feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback){
-//   ROS_INFO("Got Feedback frame");
-// }
+void PlatinumToCohan::feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback){
+  ROS_INFO("Got Feedback frame");
+}
 
 void PlatinumToCohan::activeCb(){
   ROS_INFO("Goal execution started.");

@@ -68,6 +68,7 @@ private:
   void sendGoalToBase();
   void doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result);
   void activeCb();
+  void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback);
 
   // Stores the params from the xml
   CoHANParams cohan_params_;

@@ -268,7 +268,7 @@ void PlatinumToCohan::sendGoalToBase(){
   platinum_bridge::getGoal goalsrv;
   goalsrv.request.goal_name = current_token_.token.parameters[0];
   if(get_goal_srv_.call(goalsrv)){
-    ROS_INFO("Got the goal from the server :x=%f, y=%f",goalsrv.response.coordinates[0], goalsrv.response.coordinates[1]);
+    ROS_INFO("Got the goal from the server :x=%f, y=%f, yaw=%f",goalsrv.response.coordinates[0], goalsrv.response.coordinates[1], goalsrv.response.coordinates[2]);
 
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.frame_id = "map";
@@ -276,7 +276,10 @@ void PlatinumToCohan::sendGoalToBase(){
 
     goal.target_pose.pose.position.x = goalsrv.response.coordinates[0];
     goal.target_pose.pose.position.y = goalsrv.response.coordinates[1];
-    goal.target_pose.pose.orientation.w = 1.0;
+    tf2::Quaternion q;
+    q.setRPY(0, 0, goalsrv.response.coordinates[2]);
+    tf2::convert(q, goal.target_pose.pose.orientation);
+    // goal.target_pose.pose.orientation.w = 1.0;
 
     // Need boost::bind to pass in the 'this' pointer
     MB_action_client.sendGoal(goal,boost::bind(&PlatinumToCohan::doneCb, this, _1, _2),

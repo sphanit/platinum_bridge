@@ -5,8 +5,9 @@
   "label": "farmacy",
   "description": "Corridor location of the farmacy entrance",
   "coordinates": [
-    92,
-    96
+    12.5,
+    8.2,
+    0.0
   ]
 },{
   "_id": {
@@ -15,8 +16,9 @@
   "label": "farmacy_hri",
   "description": "Central location of the farmacy room",
   "coordinates": [
-    10,
-    2.5
+    18,
+    8.2,
+    -1.54
   ]
 },{
   "_id": {
@@ -25,8 +27,9 @@
   "label": "farmacy_user",
   "description": "Location in front of the farmacy user",
   "coordinates": [
-    100,
-    7
+    18,
+    3.5,
+    -1.54
   ]
 },{
   "_id": {
@@ -35,8 +38,9 @@
   "label": "room1",
   "description": "Corridor location of room1",
   "coordinates": [
-    35,
-    54
+    8.5,
+    8.25,
+    3.14
   ]
 },{
   "_id": {
@@ -45,8 +49,9 @@
   "label": "room1_hri",
   "description": "Central location of room1",
   "coordinates": [
-    44,
-    87
+    6,
+    6,
+    -1.54
   ]
 },{
   "_id": {
@@ -55,8 +60,9 @@
   "label": "room1_user",
   "description": "Location in front of the room1 user",
   "coordinates": [
-    84,
-    39
+    2.5,
+    4.5,
+    -1.54
   ]
 },{
   "_id": {
@@ -65,8 +71,9 @@
   "label": "room2",
   "description": "Corridor location of room2",
   "coordinates": [
-    32,
-    95
+    8.5,
+    16.6,
+    3.14
   ]
 },{
   "_id": {
@@ -75,8 +82,9 @@
   "label": "room2_hri",
   "description": "Central location of room2",
   "coordinates": [
-    29,
-    54
+    5.6,
+    15.5,
+    -1.54
   ]
 },{
   "_id": {
@@ -85,8 +93,9 @@
   "label": "room2_user",
   "description": "Location in front of the room2 user",
   "coordinates": [
-    85,
-    86
+    2,
+    13.5,
+    -1.54
   ]
 },{
   "_id": {
@@ -95,8 +104,9 @@
   "label": "room3",
   "description": "Corridor location of room3",
   "coordinates": [
-    89,
-    91
+    8.5,
+    19.4,
+    3.14
   ]
 },{
   "_id": {
@@ -105,8 +115,9 @@
   "label": "room3_hri",
   "description": "Central location of room3",
   "coordinates": [
-    46,
-    79
+    4.5,
+    20,
+    1.54
   ]
 },{
   "_id": {
@@ -115,7 +126,21 @@
   "label": "room3_user",
   "description": "Location in front of the room3 user",
   "coordinates": [
-    64,
-    15
+    5,
+    23.5,
+    1.54
   ]
-}]
+},
+{
+  "_id": {
+    "oid": "63f113a4e04271e682ba924c"
+  },
+  "label": "home",
+  "description": "home location of the robot",
+  "coordinates": [
+    10.5,
+    2.0,
+    1.54
+  ]
+}
+]

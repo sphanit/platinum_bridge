@@ -10,6 +10,8 @@
 #include <map>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
+#include <tf2/impl/utils.h>
+#include <tf2/convert.h>
 #include "roxanne_rosjava_msgs/TokenExecution.h"
 #include "roxanne_rosjava_msgs/TokenExecutionFeedback.h"
 #include "platinum_bridge/getGoal.h"

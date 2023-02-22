@@ -46,6 +46,6 @@ cd <roxanne_ws>
 source devel/setup.bash
 roslaunch platinum_bridge roxanne_bridge.launch
 ```
-4. Now run roxanne. If everything works fine, the robot show move to the locations give by ```/roxanne/acting/dispatching``` topic.
+4. Now run roxanne. If everything works fine, the robot should move to the locations gived by ```/roxanne/acting/dispatching``` topic. The coordinates of these locations can be modified from platinum_bridge/scripts/map1.json
 
 

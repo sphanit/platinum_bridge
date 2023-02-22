@@ -28,7 +28,7 @@ rosdep install --from-paths src --ignore-src --rosdistro=melodic -y
 catkin build
 ```
 
-#Launching CoHAN and Platinum Bridge
+# Launching CoHAN and Platinum Bridge
 1. Run the roscore (optional)
 ```
 roscore
@@ -46,5 +46,6 @@ cd <roxanne_ws>
 source devel/setup.bash
 roslaunch platinum_bridge roxanne_bridge.launch
 ```
+4. Now run roxanne. If everything works fine, the robot show move to the locations give by ```/roxanne/acting/dispatching``` topic.
 
 

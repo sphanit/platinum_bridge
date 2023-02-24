@@ -15,7 +15,12 @@
 #include "roxanne_rosjava_msgs/TokenExecution.h"
 #include "roxanne_rosjava_msgs/TokenExecutionFeedback.h"
 #include "platinum_bridge/getGoal.h"
-#include <geometry_msgs/PoseStamped.h>
+#include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/Twist.h"
+#include "geometry_msgs/Pose2D.h"
+#include "nav_msgs/Odometry.h"
+#include <fstream>
+#include <math.h>
 
 
 using namespace std;
@@ -72,6 +77,13 @@ private:
   void doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result);
   void activeCb();
   void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback);
+  void startLogging(int human);
+
+  string computeTTC(nav_msgs::Odometry human_odom);
+  void robotCB(const nav_msgs::Odometry::ConstPtr& msg);
+  void human1CB(const nav_msgs::Odometry::ConstPtr& msg);
+  void human2CB(const nav_msgs::Odometry::ConstPtr& msg);
+
 
   // Stores the params from the xml
   CoHANParams cohan_params_;
@@ -94,12 +106,18 @@ private:
   roxanne_rosjava_msgs::TokenExecutionFeedback token_feedback_;
 
   //ROS COMPONENTS
-  ros::Subscriber get_context_;
+  ros::Subscriber get_context_,r_odom_sub_, h1_odom_sub_, h2_odom_sub_;
   ros::ServiceClient get_goal_srv_;
   ros::Publisher send_feedback_token_, h1_goal_pub_, h2_goal_pub_;
 
   //MoveBase action client
   MoveBaseClient MB_action_client;
+
+  //Logging the data
+  ofstream log_file_;
+  nav_msgs::Odometry robot_odom, human1_odom, human2_odom;
+  bool r_odom_set, h1_odom_set, h2_odom_set, start_logging_;
+  int log_human_;
 
 };
 

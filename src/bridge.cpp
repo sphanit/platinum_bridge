@@ -8,7 +8,11 @@
 PlatinumToCohan::PlatinumToCohan() : MB_action_client("move_base", true){
   string param_path_ = ros::package::getPath("platinum_bridge") + "/params/hospital/" + ParamFile;
   string context_path_ = ros::package::getPath("platinum_bridge") + "/maps/hospital/" + ContextFile;
+  string log_file_path = ros::package::getPath("platinum_bridge") + "/logs/log.txt";
+  log_file_.open(log_file_path);
+  log_file_ << "LOG STARTS : " << ros::Time::now() << endl;
   map_name_ = "hospital";
+
 
   // Loading the xml file
   param_doc_ = new TiXmlDocument(param_path_);
@@ -52,10 +56,17 @@ PlatinumToCohan::PlatinumToCohan() : MB_action_client("move_base", true){
   //Subscribe to the task planner
   ros::NodeHandle nh;
   get_context_ = nh.subscribe(GetTokenTopic, 1, &PlatinumToCohan::setContext, this);
+  r_odom_sub_ = nh.subscribe("/odom", 1, &PlatinumToCohan::robotCB, this);
+  h1_odom_sub_ = nh.subscribe("/human5/odom", 1, &PlatinumToCohan::human1CB, this);
+  h2_odom_sub_ = nh.subscribe("/human6/odom", 1, &PlatinumToCohan::human2CB, this);
   get_goal_srv_ = nh.serviceClient<platinum_bridge::getGoal>("/mongodb_goals/get_goal");
   send_feedback_token_ = nh.advertise<roxanne_rosjava_msgs::TokenExecutionFeedback>(TokenFeedbackTopic,1);
   h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human5/move_base_simple/goal",1);
   h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human6/move_base_simple/goal",1);
+
+  r_odom_set = h1_odom_set = h2_odom_set = false;
+  start_logging_ = false;
+  log_human_ = 0;
 
 
   ROS_INFO("Waiting for the move_base action server...");
@@ -312,12 +323,15 @@ void PlatinumToCohan::sendGoalToBase(){
     geometry_msgs::PoseStamped h_goal;
     h_goal.header.frame_id = "map";
 
+    int hum = 0;
+
     if(current_token_.token.parameters[3]=="free" && current_token_.token.parameters[0] == "room1"){
       h_goal.pose.position.x = 12;
       h_goal.pose.position.y = 11.5;
       h_goal.pose.orientation.w = 0.707;
       h_goal.pose.orientation.z = 0.707;
       h1_goal_pub_.publish(h_goal);
+      hum = 1;
     }
 
     if(current_token_.token.parameters[3]=="free" && current_token_.token.parameters[0] == "room2"){
@@ -326,7 +340,11 @@ void PlatinumToCohan::sendGoalToBase(){
       h_goal.pose.orientation.w = 0.707;
       h_goal.pose.orientation.z = -0.707;
       h2_goal_pub_.publish(h_goal);
+      hum=2;
     }
+
+    // Start logging
+    this->startLogging(hum);
 
     // Need boost::bind to pass in the 'this' pointer
     MB_action_client.sendGoal(goal,boost::bind(&PlatinumToCohan::doneCb, this, _1, _2),
@@ -355,6 +373,150 @@ void PlatinumToCohan::feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr&
 
 void PlatinumToCohan::activeCb(){
   ROS_INFO("Goal execution started.");
+}
+
+void PlatinumToCohan::startLogging(int human){
+  start_logging_ = true;
+  log_human_= human;
+}
+
+
+void PlatinumToCohan::robotCB(const nav_msgs::Odometry::ConstPtr& msg){
+  robot_odom = *msg;
+  r_odom_set = true;
+
+  if(start_logging_){
+    if(log_human_ == 1 && h1_odom_set == true){
+      h1_odom_set = false;
+
+      auto q = human1_odom.pose.pose.orientation;
+      double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+      double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+      double theta_yaw = atan2(siny_cosp, cosy_cosp);
+
+      log_file_ << ros::Time::now() << " : H " << human1_odom.pose.pose.position.x << " " << human1_odom.pose.pose.position.y  << " " << theta_yaw << endl;
+      log_file_ << ros::Time::now() << " : LOG VEL_H " << std::to_string(sqrt(pow(human1_odom.twist.twist.linear.x,2) + pow(human1_odom.twist.twist.linear.y,2))) << endl;
+
+      q = robot_odom.pose.pose.orientation;
+      siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+      cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+      theta_yaw = atan2(siny_cosp, cosy_cosp);
+
+      log_file_ << ros::Time::now() << " : R " << robot_odom.pose.pose.position.x << " " << robot_odom.pose.pose.position.y  << " " << theta_yaw << endl;
+      log_file_ << ros::Time::now() << " : LOG VEL_R " << std::to_string(sqrt(pow(robot_odom.twist.twist.linear.x,2) + pow(robot_odom.twist.twist.linear.y,2))) << endl;
+
+      string costs_ = this->computeTTC(human1_odom);
+
+      log_file_ << costs_ << endl;
+    }
+
+    else if(log_human_ == 2 && h2_odom_set == true){
+      h2_odom_set = false;
+
+      auto q = human2_odom.pose.pose.orientation;
+      double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+      double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+      double theta_yaw = atan2(siny_cosp, cosy_cosp);
+
+      log_file_ << ros::Time::now() << " : H " << human2_odom.pose.pose.position.x << " " << human2_odom.pose.pose.position.y  << " " << theta_yaw << endl;
+      log_file_ << ros::Time::now() << " : LOG VEL_H " << std::to_string(sqrt(pow(human2_odom.twist.twist.linear.x,2) + pow(human2_odom.twist.twist.linear.y,2))) << endl;
+
+      q = robot_odom.pose.pose.orientation;
+      siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+      cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+      theta_yaw = atan2(siny_cosp, cosy_cosp);
+
+      log_file_ << ros::Time::now() << " : R " << robot_odom.pose.pose.position.x << " " << robot_odom.pose.pose.position.y  << " " << theta_yaw << endl;
+      log_file_ << ros::Time::now() << " : LOG VEL_R " << std::to_string(sqrt(pow(robot_odom.twist.twist.linear.x,2) + pow(robot_odom.twist.twist.linear.y,2))) << endl;
+
+      string costs_ = this->computeTTC(human2_odom);
+
+      log_file_ << costs_ << endl;
+    }
+  }
+}
+
+void PlatinumToCohan::human1CB(const nav_msgs::Odometry::ConstPtr& msg){
+    human1_odom = *msg;
+    h1_odom_set = true;
+}
+
+void PlatinumToCohan::human2CB(const nav_msgs::Odometry::ConstPtr& msg){
+    human2_odom = *msg;
+    h2_odom_set = true;
+}
+
+string PlatinumToCohan::computeTTC(nav_msgs::Odometry human_odom){
+  double ttc_ = -1.0; // ttc infinite
+	double c_danger = -1;
+	double c_passby = -1;
+  string msg_log_;
+
+	geometry_msgs::Pose2D C; // robot human relative position
+	C.x = human_odom.pose.pose.position.x - robot_odom.pose.pose.position.x;
+	C.y = human_odom.pose.pose.position.y - robot_odom.pose.pose.position.y;
+	double C_sq = C.x*C.x + C.y*C.y; // dot product C.C, distance robot human
+
+	// Previous
+	// double robot_inflated_radius = robot_radius_*C_sq/dist_radius_inflation_;
+
+	// New
+	double robot_inflated_radius = 0.47;
+	double radius_sum = 0.31 + robot_inflated_radius;
+	double radius_sum_sq_ = radius_sum*radius_sum;
+
+	if(C_sq <= radius_sum_sq_) // already touching
+		ttc_ = 0.0;
+	else
+	{
+		geometry_msgs::Twist V; // relative velocity human to robot
+		V.linear.x = robot_odom.twist.twist.linear.x - human_odom.twist.twist.linear.x;
+		V.linear.y = robot_odom.twist.twist.linear.y - human_odom.twist.twist.linear.y;
+
+		double C_dot_V = C.x*V.linear.x + C.y*V.linear.y;
+
+		if(C_dot_V > 0) // otherwise ttc infinite
+		{
+			double V_sq = V.linear.x*V.linear.x + V.linear.y*V.linear.y;
+			double f = (C_dot_V * C_dot_V) - (V_sq * (C_sq - radius_sum_sq_));
+			if(f > 0) // otherwise ttc infinite
+			{
+				ttc_ = (C_dot_V - sqrt(f)) / V_sq;
+			}
+
+			else
+			{
+				double g = sqrt(V_sq*C_sq - C_dot_V*C_dot_V);
+				// std::cout <<g << "\n";
+				if((g - (sqrt(V_sq)*radius_sum))>0.1)
+				{
+					c_passby = sqrt(V_sq/C_sq)*(g/(g - (sqrt(V_sq)*radius_sum)));
+				}
+			}
+		}
+	}
+
+	if(ttc_ != -1)
+	{
+		// ROS_INFO("HBM: TTC = %f", ttc_);
+		if(abs(robot_odom.twist.twist.linear.x)>0.001 || abs(robot_odom.twist.twist.linear.y)>0.001){
+		msg_log_ = "HUMAN_MODEL TTC " + std::to_string(ttc_) + " " + std::to_string(ros::Time::now().toSec()) + "\n";
+		}
+
+		if(ttc_ > 0)
+		{
+			c_danger = 1/ttc_;
+		}
+	}
+
+	if(abs(robot_odom.twist.twist.linear.x)>0.001 || abs(robot_odom.twist.twist.linear.y)>0.001){
+		msg_log_ = "HUMAN_MODEL C_DANGER " + std::to_string(c_danger) + " " + std::to_string(ros::Time::now().toSec()) + "\n";
+
+		msg_log_ = "HUMAN_MODEL C_PASSBY " + std::to_string(c_passby) + " " + std::to_string(ros::Time::now().toSec());
+	}
+
+  return msg_log_;
+
 }
 
 

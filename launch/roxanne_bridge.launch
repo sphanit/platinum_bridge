@@ -2,7 +2,6 @@
 <launch>
     <node name="script_loadGoal" pkg="platinum_bridge" type="load_goals.sh"/>
     <node name="mongodb_goals" pkg="platinum_bridge" type="getGoals.py" output="screen"/>
-    <!-- <node name="platinum_bridge" pkg="platinum_bridge" type="bridge" output="screen" launch-prefix="bash -c 'sleep 1; $0 $@'"/> -->
-    <node name="platinum_bridge" pkg="platinum_bridge" type="bridge" output="screen"/>
-
+    <node name="platinum_bridge" pkg="platinum_bridge" type="bridge" output="screen" launch-prefix="bash -c 'sleep 1; $0 $@'"/>
+    <!-- <node name="platinum_bridge" pkg="platinum_bridge" type="bridge" output="screen"/> -->
 </launch>

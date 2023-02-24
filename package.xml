@@ -23,6 +23,7 @@
   <depend>message_generation</depend>
   <depend>actionlib</depend>
   <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
 
 
 

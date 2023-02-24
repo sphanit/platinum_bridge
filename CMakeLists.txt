@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   roxanne_rosjava_msgs
   cmake_modules
   message_generation
+  geometry_msgs
 )
 
 find_package(TinyXML REQUIRED)
@@ -34,7 +35,7 @@ generate_messages(DEPENDENCIES std_msgs)
 catkin_package(
   INCLUDE_DIRS include ${EXTERNAL_INCLUDE_DIRS}
   LIBRARIES platinum_bridge ${EXTERNAL_LIBS}
-  CATKIN_DEPENDS roscpp rospy roxanne_rosjava_msgs actionlib
+  CATKIN_DEPENDS roscpp rospy roxanne_rosjava_msgs actionlib geometry_msgs
 )
 
 

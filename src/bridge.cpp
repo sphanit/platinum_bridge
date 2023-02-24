@@ -38,10 +38,10 @@ PlatinumToCohan::PlatinumToCohan() : MB_action_client("move_base", true){
 
   //Initialize the param topics
   robot_param_names_ = {{"vel_x","max_vel_x"}, {"vel_x_back","max_vel_x_backwards"}, {"vel_y","max_vel_y"}, {"ang_vel","max_vel_theta"}, {"acc_x","acc_lim_x"},
-                      {"acc_y","acc_lim_y"}, {"plan_horz","max_global_plan_lookahead_dist"}, {"band","weight_via_point"}};
+                      {"acc_y","acc_lim_y"}, {"plan_horz","max_global_plan_lookahead_dist"}, {"band","weight_viapoint"}};
 
   human_param_names_ = {{"radius","agent_radius"}, {"vel_x","max_agent_vel_x"}, {"vel_x_nominal","nominal_agent_vel_x"}, {"vel_x_back","max_agent_vel_x_backwards"},
-	                    {"vel_y","max_agent_vel_y"}, {"ang_vel","max_agent_vel_theta"}, {"fov","fov"}, {"band","weight_agent_via_point"}};
+	                    {"vel_y","max_agent_vel_y"}, {"ang_vel","max_agent_vel_theta"}, {"fov","fov"}, {"band","weight_agent_viapoint"}};
 
   social_param_names_ = {{"safety","min_agent_robot_dist"}, {"visibility","visibility_cost_threshold"}, {"passby","rel_vel_cost_threshold"}, {"invis_humans","invisible_human_threshold"}};
 
@@ -54,6 +54,8 @@ PlatinumToCohan::PlatinumToCohan() : MB_action_client("move_base", true){
   get_context_ = nh.subscribe(GetTokenTopic, 1, &PlatinumToCohan::setContext, this);
   get_goal_srv_ = nh.serviceClient<platinum_bridge::getGoal>("/mongodb_goals/get_goal");
   send_feedback_token_ = nh.advertise<roxanne_rosjava_msgs::TokenExecutionFeedback>(TokenFeedbackTopic,1);
+  h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human5/move_base_simple/goal",1);
+  h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human6/move_base_simple/goal",1);
 
 
   ROS_INFO("Waiting for the move_base action server...");
@@ -102,10 +104,10 @@ bool PlatinumToCohan::readContextXML(){
         l_plist = l_plist->NextSiblingElement("param");
       }
     }
-    l_param = l_param->NextSiblingElement("task");
+    l_param = l_param->NextSiblingElement("human");
   }
 
-  l_param = docHandle.FirstChild("humans").FirstChild("human").ToElement();
+  l_param = docHandle.FirstChild("contexts").FirstChild("context").ToElement();
 
   while(l_param){
     if(NULL != l_param->Attribute("type")){
@@ -119,8 +121,10 @@ bool PlatinumToCohan::readContextXML(){
         l_plist = l_plist->NextSiblingElement("param");
       }
     }
-    l_param = l_param->NextSiblingElement("task");
+    l_param = l_param->NextSiblingElement("context");
   }
+
+  // cout << "contexts_" <<contexts_["social_fragile"]["passby"] << endl;
 
 }
 
@@ -215,42 +219,63 @@ Level PlatinumToCohan::toLevel(string s){
   return lv;
 }
 
-vector<float> PlatinumToCohan::toFloats(string s, string delimiter) {
+vector<string> PlatinumToCohan::toFloats(string s, string delimiter) {
     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
     string token;
-    vector<float> res;
+    vector<string> res;
     while ((pos_end = s.find(delimiter, pos_start)) != string::npos) {
         token = s.substr(pos_start, pos_end - pos_start);
         pos_start = pos_end + delim_len;
-        res.push_back(stod(token));
+        res.push_back(token);
     }
-    res.push_back (stof(s.substr(pos_start)));
+    res.push_back (s.substr(pos_start));
     return res;
 }
 
 bool PlatinumToCohan::setParams(){
-  ros::NodeHandle nh;
+  // ros::NodeHandle nh;
   Context context{current_token_.token.parameters[1], current_token_.token.parameters[2]};
+
+  string param_set = "\"{";
 
   int i = 0;
   for(auto iter = cohan_params_.RParam.begin();iter!=cohan_params_.RParam.end();iter++){
     // cout << iter->second[int(tasks_[context.task][iter->first])] << endl;
     // cout << robot_param_names_[iter->first] << endl;
-    nh.setParam(NS+robot_param_names_[iter->first],iter->second[int(tasks_[context.task][iter->first])]);
+    // nh.setParam(NS+robot_param_names_[iter->first],iter->second[int(tasks_[context.task][iter->first])]);
+    param_set += "'"+robot_param_names_[iter->first] + "':";
+    param_set += iter->second[int(tasks_[context.task][iter->first])]+", ";
     i++;
   }
 
   i = 0;
   for(auto iter = cohan_params_.HParam.begin();iter!=cohan_params_.HParam.end();iter++){
-    nh.setParam(NS+human_param_names_[iter->first],iter->second[int(humans_[context.human_type][iter->first])]);
+    // nh.setParam(NS+human_param_names_[iter->first],iter->second[int(humans_[context.human_type][iter->first])]);
+    if(human_param_names_[iter->first] == "agent_radius")
+      continue;
+    param_set += "'"+human_param_names_[iter->first] + "':";
+    param_set += iter->second[int(humans_[context.human_type][iter->first])]+", ";
     i++;
   }
 
   i = 0;
   for(auto iter = cohan_params_.SNorm.begin();iter!=cohan_params_.SNorm.end();iter++){
-    nh.setParam(NS+social_param_names_[iter->first],iter->second[int(contexts_[context.task+"_"+context.human_type][iter->first])]);
+    // nh.setParam(NS+social_param_names_[iter->first],iter->second[int(contexts_[context.task+"_"+context.human_type][iter->first])]);
+    // cout << NS+social_param_names_[iter->first] << endl;
+    // cout << iter->second[int(contexts_[context.task+"_"+context.human_type][iter->first])] << endl;
+    param_set += "'"+social_param_names_[iter->first] + "':";
+    param_set += iter->second[int(contexts_[context.task+"_"+context.human_type][iter->first])]+", ";
     i++;
   }
+  param_set+="}\"";
+  // cout << param_set << endl;
+  string command = "rosrun dynamic_reconfigure dynparam set /move_base/HATebLocalPlannerROS ";
+  command+=param_set;
+
+  while(system(command.c_str())){
+    continue;
+  }
+
 
   ROS_INFO("Params updated --> Task:%s Human:%s",context.task.c_str(), context.human_type.c_str());
 }
@@ -277,9 +302,31 @@ void PlatinumToCohan::sendGoalToBase(){
     goal.target_pose.pose.position.x = goalsrv.response.coordinates[0];
     goal.target_pose.pose.position.y = goalsrv.response.coordinates[1];
     tf2::Quaternion q;
-    q.setRPY(0, 0, goalsrv.response.coordinates[2]);
+    if(current_token_.token.parameters[3]!="out")
+      q.setRPY(0, 0, goalsrv.response.coordinates[2]);
+    else
+      q.setRPY(0, 0, (goalsrv.response.coordinates[2]+3.14));
     tf2::convert(q, goal.target_pose.pose.orientation);
     // goal.target_pose.pose.orientation.w = 1.0;
+
+    geometry_msgs::PoseStamped h_goal;
+    h_goal.header.frame_id = "map";
+
+    if(current_token_.token.parameters[3]=="free" && current_token_.token.parameters[0] == "room1"){
+      h_goal.pose.position.x = 12;
+      h_goal.pose.position.y = 11.5;
+      h_goal.pose.orientation.w = 0.707;
+      h_goal.pose.orientation.z = 0.707;
+      h1_goal_pub_.publish(h_goal);
+    }
+
+    if(current_token_.token.parameters[3]=="free" && current_token_.token.parameters[0] == "room2"){
+      h_goal.pose.position.x = 9.5;
+      h_goal.pose.position.y = 5.0;
+      h_goal.pose.orientation.w = 0.707;
+      h_goal.pose.orientation.z = -0.707;
+      h2_goal_pub_.publish(h_goal);
+    }
 
     // Need boost::bind to pass in the 'this' pointer
     MB_action_client.sendGoal(goal,boost::bind(&PlatinumToCohan::doneCb, this, _1, _2),

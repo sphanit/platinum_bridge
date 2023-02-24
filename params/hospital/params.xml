@@ -5,10 +5,10 @@
     <param name="vel_x" ranges="0.4, 0.7, 1.0"/>
     <param name="vel_x_back" ranges="0.2, 0.4, 0.7"/>
     <param name="vel_y" ranges="0.4, 0.7, 1.0"/>
-    <param name="ang_vel" ranges="0.8, 1.2. 1.6"/>
+    <param name="ang_vel" ranges="0.8, 1.2, 1.6"/>
     <param name="acc_x" ranges="0.1, 0.4, 0.8"/>
     <param name="acc_y" ranges="0.1, 0.4, 0.8"/>
-    <param name="plan_horz" ranges="2.0, 5.0, 0.0"/>
+    <param name="plan_horz" ranges="0.0, 5.0, 2.0"/>
     <param name="band" ranges="0.05, 0.5, 0.9"/>
   </r_params>
 
@@ -24,9 +24,9 @@
   </h_params>
 
   <s_norms>
-    <param name="safety" ranges="0.4, 0.7, 1.0"/>
-    <param name="visibility" ranges="2.5, 1.5, 0.8"/>
-    <param name="passby" ranges="2.0, 1.5, 1.0"/>
+    <param name="safety" ranges="0.6, 0.9, 1.6"/>
+    <param name="visibility" ranges="2.5, 1.5, 0.5"/>
+    <param name="passby" ranges="2.0, 1.5, 0.9"/>
     <param name="invis_humans" ranges="2.5, 1.8, 1.2"/>
   </s_norms>
 </params>

@@ -22,6 +22,7 @@
   <exec_depend>roxanne_rosjava_msgs</exec_depend>
   <depend>message_generation</depend>
   <depend>actionlib</depend>
+  <depend>geometry_msgs</depend>
 
 
 

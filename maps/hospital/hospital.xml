@@ -97,6 +97,48 @@
     <param name="invis_humans" level="l2"/>
   </context>
 
-  <!-- Define Others -->
+  <context type="technical_fragile">
+    <!-- <parameters plist="l3 l3 l3 l3"/> -->
+    <param name="safety" level="l3"/>
+    <param name="visibility" level="l1"/>
+    <param name="passby" level="l2"/>
+    <param name="invis_humans" level="l2"/>
+  </context>
+  <context type="technical_average">
+    <!-- <parameters plist="l2 l2 l3 l3"/> -->
+    <param name="safety" level="l1"/>
+    <param name="visibility" level="l1"/>
+    <param name="passby" level="l2"/>
+    <param name="invis_humans" level="l2"/>
+  </context>
+  <context type="technical_reliable">
+    <!-- <parameters plist="l1 l2 l2 l2"/> -->
+    <param name="safety" level="l1"/>
+    <param name="visibility" level="l1"/>
+    <param name="passby" level="l1"/>
+    <param name="invis_humans" level="l1"/>
+  </context>
+
+  <context type="interaction_fragile">
+    <!-- <parameters plist="l3 l3 l3 l3"/> -->
+    <param name="safety" level="l3"/>
+    <param name="visibility" level="l2"/>
+    <param name="passby" level="l2"/>
+    <param name="invis_humans" level="l3"/>
+  </context>
+  <context type="interaction_average">
+    <!-- <parameters plist="l2 l2 l3 l3"/> -->
+    <param name="safety" level="l2"/>
+    <param name="visibility" level="l2"/>
+    <param name="passby" level="l2"/>
+    <param name="invis_humans" level="l2"/>
+  </context>
+  <context type="interaction_reliable">
+    <!-- <parameters plist="l1 l2 l2 l2"/> -->
+    <param name="safety" level="l1"/>
+    <param name="visibility" level="l1"/>
+    <param name="passby" level="l2"/>
+    <param name="invis_humans" level="l2"/>
+  </context>
 
 </contexts>

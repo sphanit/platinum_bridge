@@ -15,6 +15,7 @@
 #include "roxanne_rosjava_msgs/TokenExecution.h"
 #include "roxanne_rosjava_msgs/TokenExecutionFeedback.h"
 #include "platinum_bridge/getGoal.h"
+#include <geometry_msgs/PoseStamped.h>
 
 
 using namespace std;
@@ -22,7 +23,7 @@ using namespace std;
 // Ranges of the paramters in levels
 enum Level {LV1, LV2, LV3};
 
-typedef map<string, vector<float>> NamedList;
+typedef map<string, vector<string>> NamedList;
 typedef map<string, Level> NamedLevel;
 typedef map<string, NamedLevel> LevelMap;
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
@@ -65,7 +66,7 @@ private:
   bool readContextXML();
   vector<Level> toLevels(string s, string delimiter);
   Level toLevel(string s);
-  vector<float> toFloats(string s, string delimiter);
+  vector<string> toFloats(string s, string delimiter);
   void setContext(const roxanne_rosjava_msgs::TokenExecution &token);
   void sendGoalToBase();
   void doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result);
@@ -95,7 +96,7 @@ private:
   //ROS COMPONENTS
   ros::Subscriber get_context_;
   ros::ServiceClient get_goal_srv_;
-  ros::Publisher send_feedback_token_;
+  ros::Publisher send_feedback_token_, h1_goal_pub_, h2_goal_pub_;
 
   //MoveBase action client
   MoveBaseClient MB_action_client;

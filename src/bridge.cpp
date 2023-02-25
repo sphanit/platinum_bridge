@@ -344,6 +344,7 @@ void PlatinumToCohan::sendGoalToBase(){
     }
 
     // Start logging
+    log_file_ << "Phase : " << current_token_.tokenId <<" "<<current_token_.token.parameters[1] << " " << current_token_.token.parameters[2] << endl;
     this->startLogging(hum);
 
     // Need boost::bind to pass in the 'this' pointer
@@ -365,6 +366,7 @@ void PlatinumToCohan::doneCb(const actionlib::SimpleClientGoalState& state, cons
   token_feedback_.tokenId = current_token_.tokenId;
   token_feedback_.code = 0;
   send_feedback_token_.publish(token_feedback_);
+  start_logging_ = false;
 }
 
 void PlatinumToCohan::feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback){
@@ -433,6 +435,18 @@ void PlatinumToCohan::robotCB(const nav_msgs::Odometry::ConstPtr& msg){
 
       log_file_ << costs_ << endl;
     }
+
+    else{
+      
+      auto q = robot_odom.pose.pose.orientation;
+      double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+      double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+      double theta_yaw = atan2(siny_cosp, cosy_cosp);
+
+      log_file_ << ros::Time::now() << " : R " << robot_odom.pose.pose.position.x << " " << robot_odom.pose.pose.position.y  << " " << theta_yaw << endl;
+      log_file_ << ros::Time::now() << " : LOG VEL_R " << std::to_string(sqrt(pow(robot_odom.twist.twist.linear.x,2) + pow(robot_odom.twist.twist.linear.y,2))) << endl;
+
+    }
   }
 }
 
@@ -500,7 +514,7 @@ string PlatinumToCohan::computeTTC(nav_msgs::Odometry human_odom){
 	{
 		// ROS_INFO("HBM: TTC = %f", ttc_);
 		if(abs(robot_odom.twist.twist.linear.x)>0.001 || abs(robot_odom.twist.twist.linear.y)>0.001){
-		msg_log_ = "HUMAN_MODEL TTC " + std::to_string(ttc_) + " " + std::to_string(ros::Time::now().toSec()) + "\n";
+		msg_log_ = std::to_string(ros::Time::now().toSec()) + " : HUMAN_MODEL TTC " + std::to_string(ttc_) + " " + "\n";
 		}
 
 		if(ttc_ > 0)
@@ -510,9 +524,9 @@ string PlatinumToCohan::computeTTC(nav_msgs::Odometry human_odom){
 	}
 
 	if(abs(robot_odom.twist.twist.linear.x)>0.001 || abs(robot_odom.twist.twist.linear.y)>0.001){
-		msg_log_ = "HUMAN_MODEL C_DANGER " + std::to_string(c_danger) + " " + std::to_string(ros::Time::now().toSec()) + "\n";
+    msg_log_ =  std::to_string(ros::Time::now().toSec()) + " : HUMAN_MODEL C_DANGER " + std::to_string(c_danger) + " " + "\n";
 
-		msg_log_ = "HUMAN_MODEL C_PASSBY " + std::to_string(c_passby) + " " + std::to_string(ros::Time::now().toSec());
+		msg_log_ += std::to_string(ros::Time::now().toSec()) + " : HUMAN_MODEL C_PASSBY " + std::to_string(c_passby);
 	}
 
   return msg_log_;

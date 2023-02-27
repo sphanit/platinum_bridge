@@ -145,6 +145,6 @@
 
 <!-- trigger = paramter4_paramter1 (from token) -->
 <trigger_humans>
-  <human name="human5" trigger="free_farmacy" goal="12 11.5 1.54"/>
-  <human name="human6" trigger="free_room2" goal="9.5 5.0 -1.54"/>
+  <human name="human5" trigger="free_room1" goal="12 11.5 1.54"/>
+  <human name="human3" trigger="free_farmacy" goal="9.5 5.0 -1.54"/>
 </trigger_humans>

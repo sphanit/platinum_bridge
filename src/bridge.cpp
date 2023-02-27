@@ -407,12 +407,12 @@ void PlatinumToCohan::sendGoalToBase(){
 
         if(i==0){
           h1_goal_pub_.publish(h_goal);
-          hum = i;
+          hum = 1;
         }
 
         if(i==1){
           h2_goal_pub_.publish(h_goal);
-          hum = i;
+          hum = 2;
         }
       }
     }

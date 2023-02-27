@@ -71,7 +71,8 @@ private:
   bool readContextXML();
   vector<Level> toLevels(string s, string delimiter);
   Level toLevel(string s);
-  vector<string> toFloats(string s, string delimiter);
+  vector<string> toChars(string s, string delimiter);
+  vector<float> toFloats(string s, string delimiter);
   void setContext(const roxanne_rosjava_msgs::TokenExecution &token);
   void sendGoalToBase();
   void doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result);
@@ -92,7 +93,8 @@ private:
   LevelMap contexts_;
   LevelMap tasks_;
   LevelMap humans_;
-  map<string, string> human_triggers;
+  map<string, vector<string>> human_triggers;
+  vector<string> names_humans;
 
   // Read XML handles
   string map_name_;

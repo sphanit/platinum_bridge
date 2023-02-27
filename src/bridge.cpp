@@ -57,12 +57,24 @@ PlatinumToCohan::PlatinumToCohan(bool set_params) : MB_action_client("move_base"
   ros::NodeHandle nh;
   get_context_ = nh.subscribe(GetTokenTopic, 1, &PlatinumToCohan::setContext, this);
   r_odom_sub_ = nh.subscribe("/odom", 1, &PlatinumToCohan::robotCB, this);
-  h1_odom_sub_ = nh.subscribe("/human5/odom", 1, &PlatinumToCohan::human1CB, this);
-  h2_odom_sub_ = nh.subscribe("/human6/odom", 1, &PlatinumToCohan::human2CB, this);
   get_goal_srv_ = nh.serviceClient<platinum_bridge::getGoal>("/mongodb_goals/get_goal");
   send_feedback_token_ = nh.advertise<roxanne_rosjava_msgs::TokenExecutionFeedback>(TokenFeedbackTopic,1);
-  h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human5/move_base_simple/goal",1);
-  h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human6/move_base_simple/goal",1);
+
+  for(auto iter = human_triggers.begin();iter!=human_triggers.end();iter++){
+    names_humans.push_back(iter->first);
+  }
+  if(names_humans.size() >= 2){
+    h1_odom_sub_ = nh.subscribe("/"+names_humans[0]+"/odom", 1, &PlatinumToCohan::human1CB, this);
+    h2_odom_sub_ = nh.subscribe("/"+names_humans[1]+"/odom", 1, &PlatinumToCohan::human2CB, this);
+    h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/"+names_humans[0]+"/move_base_simple/goal",1);
+    h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/"+names_humans[1]+"/move_base_simple/goal",1);
+  }
+  else{
+    h1_odom_sub_ = nh.subscribe("/human5/odom", 1, &PlatinumToCohan::human1CB, this);
+    h2_odom_sub_ = nh.subscribe("/human6/odom", 1, &PlatinumToCohan::human2CB, this);
+    h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human5/move_base_simple/goal",1);
+    h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human6/move_base_simple/goal",1);
+  }
 
   r_odom_set = h1_odom_set = h2_odom_set = false;
   start_logging_ = false;
@@ -148,7 +160,9 @@ bool PlatinumToCohan::readContextXML(){
     if(NULL != l_param->Attribute("name")){
       string t_name_ = l_param->Attribute("name");
       string trigger = l_param->Attribute("trigger");
-      human_triggers[t_name_] = trigger;
+      string h_goal = l_param->Attribute("goal");
+      vector<string> tmp{trigger,h_goal};
+      human_triggers[t_name_] = tmp;
     }
     l_param = l_param->NextSiblingElement("human");
   }
@@ -169,7 +183,7 @@ bool PlatinumToCohan::readParamXML(){
       string name_ = l_param->Attribute("name");
       string pstr = l_param->Attribute("ranges");
       string delimiter = ", ";
-      cohan_params_.RParam[name_] = this->toFloats(pstr, delimiter);
+      cohan_params_.RParam[name_] = this->toChars(pstr, delimiter);
     }
     l_param = l_param->NextSiblingElement("param");
   }
@@ -181,7 +195,7 @@ bool PlatinumToCohan::readParamXML(){
       string name_ = l_param->Attribute("name");
       string pstr = l_param->Attribute("ranges");
       string delimiter = ", ";
-      cohan_params_.HParam[name_] = this->toFloats(pstr, delimiter);
+      cohan_params_.HParam[name_] = this->toChars(pstr, delimiter);
     }
     l_param = l_param->NextSiblingElement("param");
 
@@ -194,7 +208,7 @@ bool PlatinumToCohan::readParamXML(){
       string name_ = l_param->Attribute("name");
       string pstr = l_param->Attribute("ranges");
       string delimiter = ", ";
-      cohan_params_.SNorm[name_] = this->toFloats(pstr, delimiter);
+      cohan_params_.SNorm[name_] = this->toChars(pstr, delimiter);
       }
     l_param = l_param->NextSiblingElement("param");
   }
@@ -249,7 +263,7 @@ Level PlatinumToCohan::toLevel(string s){
   return lv;
 }
 
-vector<string> PlatinumToCohan::toFloats(string s, string delimiter) {
+vector<string> PlatinumToCohan::toChars(string s, string delimiter) {
     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
     string token;
     vector<string> res;
@@ -259,6 +273,19 @@ vector<string> PlatinumToCohan::toFloats(string s, string delimiter) {
         res.push_back(token);
     }
     res.push_back (s.substr(pos_start));
+    return res;
+}
+
+vector<float> PlatinumToCohan::toFloats(string s, string delimiter) {
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    string token;
+    vector<float> res;
+    while ((pos_end = s.find(delimiter, pos_start)) != string::npos) {
+        token = s.substr(pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back(stof(token));
+    }
+    res.push_back (stof(s.substr(pos_start)));
     return res;
 }
 
@@ -347,22 +374,47 @@ void PlatinumToCohan::sendGoalToBase(){
 
     string trigger_ = current_token_.token.parameters[3]+"_"+current_token_.token.parameters[0];
 
-    if(trigger_==human_triggers["human5"]){
-      h_goal.pose.position.x = 12;
-      h_goal.pose.position.y = 11.5;
-      h_goal.pose.orientation.w = 0.707;
-      h_goal.pose.orientation.z = 0.707;
-      h1_goal_pub_.publish(h_goal);
-      hum = 1;
-    }
+    // if(trigger_==human_triggers["human5"][0]){
+    //   h_goal.pose.position.x = 12;
+    //   h_goal.pose.position.y = 11.5;
+    //   h_goal.pose.orientation.w = 0.707;
+    //   h_goal.pose.orientation.z = 0.707;
+    //   h1_goal_pub_.publish(h_goal);
+    //   hum = 1;
+    // }
+    //
+    // if(trigger_==human_triggers["human6"][0]){
+    //   h_goal.pose.position.x = 9.5;
+    //   h_goal.pose.position.y = 5.0;
+    //   h_goal.pose.orientation.w = 0.707;
+    //   h_goal.pose.orientation.z = -0.707;
+    //   h2_goal_pub_.publish(h_goal);
+    //   hum=2;
+    // }
+    // cout << human_triggers[names_humans[0]][0] << endl;
+    // cout << trigger_ << endl;
 
-    if(trigger_==human_triggers["human6"]){
-      h_goal.pose.position.x = 9.5;
-      h_goal.pose.position.y = 5.0;
-      h_goal.pose.orientation.w = 0.707;
-      h_goal.pose.orientation.z = -0.707;
-      h2_goal_pub_.publish(h_goal);
-      hum=2;
+    for(int i=0;i<names_humans.size();i++){
+      if(trigger_==human_triggers[names_humans[i]][0]){
+        string delimiter = " ";
+        auto tmp_goal = this->toFloats(human_triggers[names_humans[i]][1], delimiter);
+        cout << tmp_goal[0] << tmp_goal[1] <<tmp_goal[2]<< endl;
+        h_goal.pose.position.x = tmp_goal[0];
+        h_goal.pose.position.y = tmp_goal[1];
+        tf2::Quaternion q1;
+        q1.setRPY(0, 0, tmp_goal[2]);
+        tf2::convert(q1, h_goal.pose.orientation);
+
+        if(i==0){
+          h1_goal_pub_.publish(h_goal);
+          hum = i;
+        }
+
+        if(i==1){
+          h2_goal_pub_.publish(h_goal);
+          hum = i;
+        }
+      }
     }
 
     // Start logging

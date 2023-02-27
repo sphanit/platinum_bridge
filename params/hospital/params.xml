@@ -14,7 +14,7 @@
 
   <h_params>
     <param name="radius" ranges="0.15, 0.3, 0.45"/>
-    <param name="vel_x" ranges="0.5, 0.9, 1.3"/>
+    <param name="vel_x" ranges="0.4, 0.9, 1.3"/>
     <param name="vel_x_nominal" ranges="0.3, 0.7, 1.1"/>
     <param name="vel_x_back" ranges="0.01, 0.2, 0.5"/>
     <param name="vel_y" ranges="0.4, 0.7, 1.0"/>

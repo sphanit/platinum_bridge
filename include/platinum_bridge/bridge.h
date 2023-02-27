@@ -55,7 +55,7 @@ struct Context{
 // class defining the CoHAN and Platinum Bridge
 class PlatinumToCohan{
 public:
-  PlatinumToCohan();
+  PlatinumToCohan(bool set_params);
 
   ~PlatinumToCohan();
 
@@ -92,6 +92,7 @@ private:
   LevelMap contexts_;
   LevelMap tasks_;
   LevelMap humans_;
+  map<string, string> human_triggers;
 
   // Read XML handles
   string map_name_;
@@ -118,6 +119,7 @@ private:
   nav_msgs::Odometry robot_odom, human1_odom, human2_odom;
   bool r_odom_set, h1_odom_set, h2_odom_set, start_logging_;
   int log_human_;
+  bool set_params_;
 
 };
 

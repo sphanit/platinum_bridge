@@ -5,7 +5,7 @@
 #define GetTokenTopic "/roxanne/acting/dispatching"
 #define TokenFeedbackTopic "/roxanne/acting/feedback"
 
-PlatinumToCohan::PlatinumToCohan() : MB_action_client("move_base", true){
+PlatinumToCohan::PlatinumToCohan(bool set_params) : MB_action_client("move_base", true){
   string param_path_ = ros::package::getPath("platinum_bridge") + "/params/hospital/" + ParamFile;
   string context_path_ = ros::package::getPath("platinum_bridge") + "/maps/hospital/" + ContextFile;
   string log_file_path = ros::package::getPath("platinum_bridge") + "/logs/log.txt";
@@ -68,11 +68,18 @@ PlatinumToCohan::PlatinumToCohan() : MB_action_client("move_base", true){
   start_logging_ = false;
   log_human_ = 0;
 
+  set_params_ = set_params;
+  if(set_params_)
+    ROS_INFO("setParams active!");
+  if(!set_params_)
+    ROS_INFO("setParams disabled.");
 
   ROS_INFO("Waiting for the move_base action server...");
   MB_action_client.waitForServer();
 
+
   ROS_INFO("Initialized!");
+  ros::spin();
 }
 
 PlatinumToCohan::~PlatinumToCohan(){
@@ -134,6 +141,18 @@ bool PlatinumToCohan::readContextXML(){
     }
     l_param = l_param->NextSiblingElement("context");
   }
+
+  l_param = docHandle.FirstChild("trigger_humans").FirstChild("human").ToElement();
+
+  while(l_param){
+    if(NULL != l_param->Attribute("name")){
+      string t_name_ = l_param->Attribute("name");
+      string trigger = l_param->Attribute("trigger");
+      human_triggers[t_name_] = trigger;
+    }
+    l_param = l_param->NextSiblingElement("human");
+  }
+
 
   // cout << "contexts_" <<contexts_["social_fragile"]["passby"] << endl;
 
@@ -295,7 +314,8 @@ void  PlatinumToCohan::setContext(const roxanne_rosjava_msgs::TokenExecution &to
   current_token_ = token;
   ROS_INFO("New token received.");
   // Call the setParams
-  this->setParams();
+  if(set_params_)
+    this->setParams();
   // Send the goal to base
   this->sendGoalToBase();
 }
@@ -325,7 +345,9 @@ void PlatinumToCohan::sendGoalToBase(){
 
     int hum = 0;
 
-    if(current_token_.token.parameters[3]=="free" && current_token_.token.parameters[0] == "room1"){
+    string trigger_ = current_token_.token.parameters[3]+"_"+current_token_.token.parameters[0];
+
+    if(trigger_==human_triggers["human5"]){
       h_goal.pose.position.x = 12;
       h_goal.pose.position.y = 11.5;
       h_goal.pose.orientation.w = 0.707;
@@ -334,7 +356,7 @@ void PlatinumToCohan::sendGoalToBase(){
       hum = 1;
     }
 
-    if(current_token_.token.parameters[3]=="free" && current_token_.token.parameters[0] == "room2"){
+    if(trigger_==human_triggers["human6"]){
       h_goal.pose.position.x = 9.5;
       h_goal.pose.position.y = 5.0;
       h_goal.pose.orientation.w = 0.707;
@@ -437,7 +459,7 @@ void PlatinumToCohan::robotCB(const nav_msgs::Odometry::ConstPtr& msg){
     }
 
     else{
-      
+
       auto q = robot_odom.pose.pose.orientation;
       double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
       double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
@@ -537,9 +559,18 @@ string PlatinumToCohan::computeTTC(nav_msgs::Odometry human_odom){
 int main(int argc, char** argv){
   ros::init(argc, argv, "platinum_bridge");
 
-  PlatinumToCohan pc_bridge;
+  if(argc<2){
+    PlatinumToCohan pc_bridge(true);
+      // ros::spin();
+  }
+  else{
+    string set_param = argv[1];
+    if(set_param == "true")
+      PlatinumToCohan pc_bridge(true);
+    else
+      PlatinumToCohan pc_bridge(false);
 
-  ros::spin();
+    }
 
   return 0;
 }

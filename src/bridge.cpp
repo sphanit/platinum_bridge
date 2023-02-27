@@ -5,10 +5,10 @@
 #define GetTokenTopic "/roxanne/acting/dispatching"
 #define TokenFeedbackTopic "/roxanne/acting/feedback"
 
-PlatinumToCohan::PlatinumToCohan(bool set_params) : MB_action_client("move_base", true){
+PlatinumToCohan::PlatinumToCohan(bool set_params, string log_name) : MB_action_client("move_base", true){
   string param_path_ = ros::package::getPath("platinum_bridge") + "/params/hospital/" + ParamFile;
   string context_path_ = ros::package::getPath("platinum_bridge") + "/maps/hospital/" + ContextFile;
-  string log_file_path = ros::package::getPath("platinum_bridge") + "/logs/log.txt";
+  string log_file_path = ros::package::getPath("platinum_bridge") + "/logs/"+log_name+".txt";
   log_file_.open(log_file_path);
   log_file_ << "LOG STARTS : " << ros::Time::now() << endl;
   map_name_ = "hospital";
@@ -611,16 +611,17 @@ string PlatinumToCohan::computeTTC(nav_msgs::Odometry human_odom){
 int main(int argc, char** argv){
   ros::init(argc, argv, "platinum_bridge");
 
-  if(argc<2){
-    PlatinumToCohan pc_bridge(true);
+  if(argc<3){
+    PlatinumToCohan pc_bridge(true,"log.txt");
       // ros::spin();
   }
   else{
     string set_param = argv[1];
+    string log_name_ = argv[2];
     if(set_param == "true")
-      PlatinumToCohan pc_bridge(true);
+      PlatinumToCohan pc_bridge(true, log_name_);
     else
-      PlatinumToCohan pc_bridge(false);
+      PlatinumToCohan pc_bridge(false, log_name_);
 
     }
 

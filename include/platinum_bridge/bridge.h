@@ -55,7 +55,7 @@ struct Context{
 // class defining the CoHAN and Platinum Bridge
 class PlatinumToCohan{
 public:
-  PlatinumToCohan(bool set_params);
+  PlatinumToCohan(bool set_params, string log_name);
 
   ~PlatinumToCohan();
 

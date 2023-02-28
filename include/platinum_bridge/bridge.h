@@ -93,7 +93,7 @@ private:
   LevelMap contexts_;
   LevelMap tasks_;
   LevelMap humans_;
-  map<string, vector<string>> human_triggers;
+  map<string, vector<vector<string>>> human_triggers;
   vector<string> names_humans;
 
   // Read XML handles

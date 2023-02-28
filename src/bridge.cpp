@@ -63,6 +63,9 @@ PlatinumToCohan::PlatinumToCohan(bool set_params, string log_name) : MB_action_c
   for(auto iter = human_triggers.begin();iter!=human_triggers.end();iter++){
     names_humans.push_back(iter->first);
   }
+
+  cout << names_humans.size() << "names" << endl;
+
   if(names_humans.size() >= 2){
     h1_odom_sub_ = nh.subscribe("/"+names_humans[0]+"/odom", 1, &PlatinumToCohan::human1CB, this);
     h2_odom_sub_ = nh.subscribe("/"+names_humans[1]+"/odom", 1, &PlatinumToCohan::human2CB, this);
@@ -162,10 +165,12 @@ bool PlatinumToCohan::readContextXML(){
       string trigger = l_param->Attribute("trigger");
       string h_goal = l_param->Attribute("goal");
       vector<string> tmp{trigger,h_goal};
-      human_triggers[t_name_] = tmp;
+      human_triggers[t_name_].push_back(tmp);
     }
     l_param = l_param->NextSiblingElement("human");
   }
+
+  cout << human_triggers.size() << endl;
 
 
   // cout << "contexts_" <<contexts_["social_fragile"]["passby"] << endl;
@@ -395,24 +400,26 @@ void PlatinumToCohan::sendGoalToBase(){
     // cout << trigger_ << endl;
 
     for(int i=0;i<names_humans.size();i++){
-      if(trigger_==human_triggers[names_humans[i]][0]){
-        string delimiter = " ";
-        auto tmp_goal = this->toFloats(human_triggers[names_humans[i]][1], delimiter);
-        cout << tmp_goal[0] << tmp_goal[1] <<tmp_goal[2]<< endl;
-        h_goal.pose.position.x = tmp_goal[0];
-        h_goal.pose.position.y = tmp_goal[1];
-        tf2::Quaternion q1;
-        q1.setRPY(0, 0, tmp_goal[2]);
-        tf2::convert(q1, h_goal.pose.orientation);
+      for(int j=0;j<human_triggers[names_humans[i]].size();j++){
+        if(trigger_==human_triggers[names_humans[i]][j][0]){
+          string delimiter = " ";
+          auto tmp_goal = this->toFloats(human_triggers[names_humans[i]][j][1], delimiter);
+          cout << tmp_goal[0] << tmp_goal[1] <<tmp_goal[2]<< endl;
+          h_goal.pose.position.x = tmp_goal[0];
+          h_goal.pose.position.y = tmp_goal[1];
+          tf2::Quaternion q1;
+          q1.setRPY(0, 0, tmp_goal[2]);
+          tf2::convert(q1, h_goal.pose.orientation);
 
-        if(i==0){
-          h1_goal_pub_.publish(h_goal);
-          hum = 1;
-        }
+          if(i==0){
+            h1_goal_pub_.publish(h_goal);
+            hum = 1;
+          }
 
-        if(i==1){
-          h2_goal_pub_.publish(h_goal);
-          hum = 2;
+          if(i==1){
+            h2_goal_pub_.publish(h_goal);
+            hum = 2;
+          }
         }
       }
     }

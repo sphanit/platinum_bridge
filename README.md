@@ -52,6 +52,10 @@ cd <roxanne_ws>
 source devel/setup.bash
 roslaunch platinum_bridge roxanne_bridge.launch set_params:=true log_name:test_log continuous:=true
 ```
+   -  ```set_params``` corresponds to dynamic parameter setting (true -> paramters are updated based on task)  
+   -  ```log_name``` is the name of the log file that logs the data and metrics  
+   -  when ```continuous``` param is true, the goal is updated before receiving a next token. (default -> false)  
+ 
 5. Now run roxanne. If everything works fine, the robot should move to the locations gived by ```/roxanne/acting/dispatching``` topic. The coordinates of these locations can be modified from platinum_bridge/scripts/map1.json
 
 

@@ -19,6 +19,7 @@
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Pose2D.h"
 #include "nav_msgs/Odometry.h"
+#include "std_msgs/Float32.h"
 #include <fstream>
 #include <math.h>
 
@@ -55,12 +56,12 @@ struct Context{
 // class defining the CoHAN and Platinum Bridge
 class PlatinumToCohan{
 public:
-  PlatinumToCohan(bool set_params, string log_name);
+  PlatinumToCohan(bool set_params, string log_name, bool continuous);
 
   ~PlatinumToCohan();
 
   // Updates the parameters on server based on the Context given
-  bool setParams();
+  bool setParams(roxanne_rosjava_msgs::TokenExecution c_token);
 
   // Returns the existing params formatted as ParamList
   ParamList getParams(string type="all");
@@ -74,7 +75,8 @@ private:
   vector<string> toChars(string s, string delimiter);
   vector<float> toFloats(string s, string delimiter);
   void setContext(const roxanne_rosjava_msgs::TokenExecution &token);
-  void sendGoalToBase();
+  void ttgCB(const std_msgs::Float32& ttg);
+  void sendGoalToBase(roxanne_rosjava_msgs::TokenExecution c_token);
   void doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result);
   void activeCb();
   void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback);
@@ -107,9 +109,11 @@ private:
   // Roxanne token and feedback
   roxanne_rosjava_msgs::TokenExecution current_token_;
   roxanne_rosjava_msgs::TokenExecutionFeedback token_feedback_;
+  bool prev_token_exist;
+  bool token_updated;
 
   //ROS COMPONENTS
-  ros::Subscriber get_context_,r_odom_sub_, h1_odom_sub_, h2_odom_sub_;
+  ros::Subscriber get_context_,r_odom_sub_, h1_odom_sub_, h2_odom_sub_, ttg_sub_;
   ros::ServiceClient get_goal_srv_;
   ros::Publisher send_feedback_token_, h1_goal_pub_, h2_goal_pub_;
 
@@ -122,6 +126,12 @@ private:
   bool r_odom_set, h1_odom_set, h2_odom_set, start_logging_;
   int log_human_;
   bool set_params_;
+
+  // Situation assessment
+  double remaining_time_to_goal;
+  double time_to_goal;
+  ros::Time last_recorded;
+  bool continuous_;
 
 };
 

@@ -1,11 +1,12 @@
 #include <platinum_bridge/bridge.h>
 #define NS "/move_base/HATebLocalPlannerROS/"
+#define TTG_TOPIC "/move_base/HATebLocalPlannerROS/time_to_goal"
 #define ParamFile "params.xml"
 #define ContextFile "hospital.xml"
 #define GetTokenTopic "/roxanne/acting/dispatching"
 #define TokenFeedbackTopic "/roxanne/acting/feedback"
 
-PlatinumToCohan::PlatinumToCohan(bool set_params, string log_name) : MB_action_client("move_base", true){
+PlatinumToCohan::PlatinumToCohan(bool set_params, string log_name, bool continuous) : MB_action_client("move_base", true){
   string param_path_ = ros::package::getPath("platinum_bridge") + "/params/hospital/" + ParamFile;
   string context_path_ = ros::package::getPath("platinum_bridge") + "/maps/hospital/" + ContextFile;
   string log_file_path = ros::package::getPath("platinum_bridge") + "/logs/"+log_name+".txt";
@@ -57,31 +58,44 @@ PlatinumToCohan::PlatinumToCohan(bool set_params, string log_name) : MB_action_c
   ros::NodeHandle nh;
   get_context_ = nh.subscribe(GetTokenTopic, 1, &PlatinumToCohan::setContext, this);
   r_odom_sub_ = nh.subscribe("/odom", 1, &PlatinumToCohan::robotCB, this);
+  ttg_sub_ = nh.subscribe(TTG_TOPIC, 1, &PlatinumToCohan::ttgCB, this);
   get_goal_srv_ = nh.serviceClient<platinum_bridge::getGoal>("/mongodb_goals/get_goal");
-  send_feedback_token_ = nh.advertise<roxanne_rosjava_msgs::TokenExecutionFeedback>(TokenFeedbackTopic,1);
+  send_feedback_token_ = nh.advertise<roxanne_rosjava_msgs::TokenExecutionFeedback>(TokenFeedbackTopic,10);
 
   for(auto iter = human_triggers.begin();iter!=human_triggers.end();iter++){
     names_humans.push_back(iter->first);
   }
 
-  cout << names_humans.size() << "names" << endl;
 
   if(names_humans.size() >= 2){
     h1_odom_sub_ = nh.subscribe("/"+names_humans[0]+"/odom", 1, &PlatinumToCohan::human1CB, this);
     h2_odom_sub_ = nh.subscribe("/"+names_humans[1]+"/odom", 1, &PlatinumToCohan::human2CB, this);
-    h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/"+names_humans[0]+"/move_base_simple/goal",1);
-    h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/"+names_humans[1]+"/move_base_simple/goal",1);
+    h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/"+names_humans[0]+"/move_base_simple/goal",10);
+    h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/"+names_humans[1]+"/move_base_simple/goal",10);
   }
   else{
     h1_odom_sub_ = nh.subscribe("/human5/odom", 1, &PlatinumToCohan::human1CB, this);
     h2_odom_sub_ = nh.subscribe("/human6/odom", 1, &PlatinumToCohan::human2CB, this);
-    h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human5/move_base_simple/goal",1);
-    h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human6/move_base_simple/goal",1);
+    h1_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human5/move_base_simple/goal",10);
+    h2_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/human6/move_base_simple/goal",10);
   }
 
   r_odom_set = h1_odom_set = h2_odom_set = false;
   start_logging_ = false;
   log_human_ = 0;
+
+  remaining_time_to_goal = 0;
+  time_to_goal = 999;
+  last_recorded = ros::Time::now();
+
+  prev_token_exist = false;
+  token_updated = false;
+
+  continuous_ = continuous;
+  if(continuous_)
+    ROS_INFO("Continuous goal update active!");
+  if(!continuous_)
+    ROS_INFO("Discrete goal update active!");
 
   set_params_ = set_params;
   if(set_params_)
@@ -169,11 +183,6 @@ bool PlatinumToCohan::readContextXML(){
     }
     l_param = l_param->NextSiblingElement("human");
   }
-
-  cout << human_triggers.size() << endl;
-
-
-  // cout << "contexts_" <<contexts_["social_fragile"]["passby"] << endl;
 
 }
 
@@ -294,17 +303,14 @@ vector<float> PlatinumToCohan::toFloats(string s, string delimiter) {
     return res;
 }
 
-bool PlatinumToCohan::setParams(){
+bool PlatinumToCohan::setParams(roxanne_rosjava_msgs::TokenExecution c_token){
   // ros::NodeHandle nh;
-  Context context{current_token_.token.parameters[1], current_token_.token.parameters[2]};
+  Context context{c_token.token.parameters[1], c_token.token.parameters[2]};
 
   string param_set = "\"{";
 
   int i = 0;
   for(auto iter = cohan_params_.RParam.begin();iter!=cohan_params_.RParam.end();iter++){
-    // cout << iter->second[int(tasks_[context.task][iter->first])] << endl;
-    // cout << robot_param_names_[iter->first] << endl;
-    // nh.setParam(NS+robot_param_names_[iter->first],iter->second[int(tasks_[context.task][iter->first])]);
     param_set += "'"+robot_param_names_[iter->first] + "':";
     param_set += iter->second[int(tasks_[context.task][iter->first])]+", ";
     i++;
@@ -312,7 +318,6 @@ bool PlatinumToCohan::setParams(){
 
   i = 0;
   for(auto iter = cohan_params_.HParam.begin();iter!=cohan_params_.HParam.end();iter++){
-    // nh.setParam(NS+human_param_names_[iter->first],iter->second[int(humans_[context.human_type][iter->first])]);
     if(human_param_names_[iter->first] == "agent_radius")
       continue;
     param_set += "'"+human_param_names_[iter->first] + "':";
@@ -322,15 +327,11 @@ bool PlatinumToCohan::setParams(){
 
   i = 0;
   for(auto iter = cohan_params_.SNorm.begin();iter!=cohan_params_.SNorm.end();iter++){
-    // nh.setParam(NS+social_param_names_[iter->first],iter->second[int(contexts_[context.task+"_"+context.human_type][iter->first])]);
-    // cout << NS+social_param_names_[iter->first] << endl;
-    // cout << iter->second[int(contexts_[context.task+"_"+context.human_type][iter->first])] << endl;
     param_set += "'"+social_param_names_[iter->first] + "':";
     param_set += iter->second[int(contexts_[context.task+"_"+context.human_type][iter->first])]+", ";
     i++;
   }
   param_set+="}\"";
-  // cout << param_set << endl;
   string command = "rosrun dynamic_reconfigure dynparam set /move_base/HATebLocalPlannerROS ";
   command+=param_set;
 
@@ -345,16 +346,31 @@ bool PlatinumToCohan::setParams(){
 void  PlatinumToCohan::setContext(const roxanne_rosjava_msgs::TokenExecution &token){
   current_token_ = token;
   ROS_INFO("New token received.");
-  // Call the setParams
-  if(set_params_)
-    this->setParams();
-  // Send the goal to base
-  this->sendGoalToBase();
+  
+  if(!prev_token_exist){
+    // Call the setParams
+    if(set_params_)
+      this->setParams(current_token_);
+
+    if(continuous_){
+      // Send the first goal to base
+      this->sendGoalToBase(current_token_);
+    }
+  }
+
+  if(!continuous_){
+    // Send the goal to base
+    this->sendGoalToBase(current_token_);
+  }
+
+  prev_token_exist = true;
+  token_updated = true;
 }
 
-void PlatinumToCohan::sendGoalToBase(){
+void PlatinumToCohan::sendGoalToBase(roxanne_rosjava_msgs::TokenExecution c_token){
   platinum_bridge::getGoal goalsrv;
-  goalsrv.request.goal_name = current_token_.token.parameters[0];
+  goalsrv.request.goal_name = c_token.token.parameters[0];
+
   if(get_goal_srv_.call(goalsrv)){
     ROS_INFO("Got the goal from the server :x=%f, y=%f, yaw=%f",goalsrv.response.coordinates[0], goalsrv.response.coordinates[1], goalsrv.response.coordinates[2]);
 
@@ -365,7 +381,7 @@ void PlatinumToCohan::sendGoalToBase(){
     goal.target_pose.pose.position.x = goalsrv.response.coordinates[0];
     goal.target_pose.pose.position.y = goalsrv.response.coordinates[1];
     tf2::Quaternion q;
-    if(current_token_.token.parameters[3]!="out")
+    if(c_token.token.parameters[3]!="out")
       q.setRPY(0, 0, goalsrv.response.coordinates[2]);
     else
       q.setRPY(0, 0, (goalsrv.response.coordinates[2]+3.14));
@@ -377,7 +393,7 @@ void PlatinumToCohan::sendGoalToBase(){
 
     int hum = 0;
 
-    string trigger_ = current_token_.token.parameters[3]+"_"+current_token_.token.parameters[0];
+    string trigger_ = c_token.token.parameters[3]+"_"+c_token.token.parameters[0];
 
     // if(trigger_==human_triggers["human5"][0]){
     //   h_goal.pose.position.x = 12;
@@ -396,15 +412,12 @@ void PlatinumToCohan::sendGoalToBase(){
     //   h2_goal_pub_.publish(h_goal);
     //   hum=2;
     // }
-    // cout << human_triggers[names_humans[0]][0] << endl;
-    // cout << trigger_ << endl;
 
     for(int i=0;i<names_humans.size();i++){
       for(int j=0;j<human_triggers[names_humans[i]].size();j++){
         if(trigger_==human_triggers[names_humans[i]][j][0]){
           string delimiter = " ";
           auto tmp_goal = this->toFloats(human_triggers[names_humans[i]][j][1], delimiter);
-          cout << tmp_goal[0] << tmp_goal[1] <<tmp_goal[2]<< endl;
           h_goal.pose.position.x = tmp_goal[0];
           h_goal.pose.position.y = tmp_goal[1];
           tf2::Quaternion q1;
@@ -425,7 +438,7 @@ void PlatinumToCohan::sendGoalToBase(){
     }
 
     // Start logging
-    log_file_ << "Phase : " << current_token_.tokenId <<" "<<current_token_.token.parameters[1] << " " << current_token_.token.parameters[2] << endl;
+    log_file_ << "Phase : " << c_token.tokenId <<" "<<c_token.token.parameters[1] << " " << c_token.token.parameters[2] << endl;
     this->startLogging(hum);
 
     // Need boost::bind to pass in the 'this' pointer
@@ -440,6 +453,56 @@ void PlatinumToCohan::sendGoalToBase(){
     ROS_ERROR("Goal cannot be retrieved!!");
   }
 
+  // Checking the expected time to goal
+  remaining_time_to_goal = c_token.token.duration[1];
+  last_recorded = ros::Time::now();
+}
+
+void PlatinumToCohan::ttgCB(const std_msgs::Float32& ttg){
+  time_to_goal = ttg.data;
+  
+  double dt_diff = (ros::Time::now() - last_recorded).toSec();
+  remaining_time_to_goal = remaining_time_to_goal - dt_diff;
+
+  if(remaining_time_to_goal < time_to_goal){
+    MB_action_client.cancelAllGoals();
+    token_feedback_.tokenId = current_token_.tokenId;
+    token_feedback_.code = 2;
+    send_feedback_token_.publish(token_feedback_);
+    start_logging_ = false;
+    time_to_goal = 999; 
+  }
+
+  if(token_updated){
+    
+    double tc = 0.5;
+    if(set_params_)
+      tc = 2.5;
+
+    if(current_token_.next.size()!=0){
+      if(time_to_goal < tc){
+        roxanne_rosjava_msgs::TokenExecution c_token; 
+        c_token.tokenId = current_token_.tokenId + 1;
+        c_token.token = current_token_.next[1];
+        if(set_params_)
+          this->setParams(c_token);
+        token_updated = false;
+
+        if(continuous_){
+          start_logging_ = false;
+          this->sendGoalToBase(c_token);
+          token_feedback_.tokenId = current_token_.tokenId;
+          token_feedback_.code = 0;
+          send_feedback_token_.publish(token_feedback_);
+          time_to_goal = 999;
+        }
+      }
+    }
+    else
+      prev_token_exist = false;
+  }
+
+  last_recorded = ros::Time::now();
 }
 
 void PlatinumToCohan::doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result){
@@ -448,6 +511,7 @@ void PlatinumToCohan::doneCb(const actionlib::SimpleClientGoalState& state, cons
   token_feedback_.code = 0;
   send_feedback_token_.publish(token_feedback_);
   start_logging_ = false;
+  time_to_goal = 999;
 }
 
 void PlatinumToCohan::feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback){
@@ -490,7 +554,7 @@ void PlatinumToCohan::robotCB(const nav_msgs::Odometry::ConstPtr& msg){
 
       string costs_ = this->computeTTC(human1_odom);
 
-      log_file_ << costs_ << endl;
+      // log_file_ << costs_ << endl;
     }
 
     else if(log_human_ == 2 && h2_odom_set == true){
@@ -514,7 +578,7 @@ void PlatinumToCohan::robotCB(const nav_msgs::Odometry::ConstPtr& msg){
 
       string costs_ = this->computeTTC(human2_odom);
 
-      log_file_ << costs_ << endl;
+      // log_file_ << costs_ << endl;
     }
 
     else{
@@ -582,7 +646,6 @@ string PlatinumToCohan::computeTTC(nav_msgs::Odometry human_odom){
 			else
 			{
 				double g = sqrt(V_sq*C_sq - C_dot_V*C_dot_V);
-				// std::cout <<g << "\n";
 				if((g - (sqrt(V_sq)*radius_sum))>0.1)
 				{
 					c_passby = sqrt(V_sq/C_sq)*(g/(g - (sqrt(V_sq)*radius_sum)));
@@ -605,30 +668,38 @@ string PlatinumToCohan::computeTTC(nav_msgs::Odometry human_odom){
 	}
 
 	if(abs(robot_odom.twist.twist.linear.x)>0.001 || abs(robot_odom.twist.twist.linear.y)>0.001){
-    msg_log_ =  std::to_string(ros::Time::now().toSec()) + " : HUMAN_MODEL C_DANGER " + std::to_string(c_danger) + " " + "\n";
+    msg_log_ =  std::to_string(ros::Time::now().toSec()) + " : HUMAN_MODEL C_DANGER " + std::to_string(c_danger) + "\n";
 
-		msg_log_ += std::to_string(ros::Time::now().toSec()) + " : HUMAN_MODEL C_PASSBY " + std::to_string(c_passby);
+		msg_log_ += std::to_string(ros::Time::now().toSec()) + " : HUMAN_MODEL C_PASSBY " + std::to_string(c_passby) + "\n";
 	}
 
   return msg_log_;
 
 }
 
-
 int main(int argc, char** argv){
   ros::init(argc, argv, "platinum_bridge");
 
-  if(argc<3){
-    PlatinumToCohan pc_bridge(true,"log.txt");
+  if(argc<4){
+    PlatinumToCohan pc_bridge(true, "log.txt", false);
       // ros::spin();
   }
   else{
     string set_param = argv[1];
     string log_name_ = argv[2];
-    if(set_param == "true")
-      PlatinumToCohan pc_bridge(true, log_name_);
-    else
-      PlatinumToCohan pc_bridge(false, log_name_);
+    string continuous = argv[3];
+    if(set_param == "true"){
+      if(continuous == "true")
+        PlatinumToCohan pc_bridge(true, log_name_, true);
+      else
+        PlatinumToCohan pc_bridge(true, log_name_, false);
+    }
+    else{
+      if(continuous == "true")
+        PlatinumToCohan pc_bridge(false, log_name_, true);
+      else
+        PlatinumToCohan pc_bridge(false, log_name_, false);
+    }
 
     }
 

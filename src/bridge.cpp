@@ -90,6 +90,7 @@ PlatinumToCohan::PlatinumToCohan(bool set_params, string log_name, bool continuo
 
   prev_token_exist = false;
   token_updated = false;
+  goal_cancelled = false;
 
   continuous_ = continuous;
   if(continuous_)
@@ -365,6 +366,7 @@ void  PlatinumToCohan::setContext(const roxanne_rosjava_msgs::TokenExecution &to
 
   prev_token_exist = true;
   token_updated = true;
+  goal_cancelled = false;
 }
 
 void PlatinumToCohan::sendGoalToBase(roxanne_rosjava_msgs::TokenExecution c_token){
@@ -464,54 +466,64 @@ void PlatinumToCohan::ttgCB(const std_msgs::Float32& ttg){
   double dt_diff = (ros::Time::now() - last_recorded).toSec();
   remaining_time_to_goal = remaining_time_to_goal - dt_diff;
 
-  if(remaining_time_to_goal < time_to_goal){
-    MB_action_client.cancelAllGoals();
-    token_feedback_.tokenId = current_token_.tokenId;
-    token_feedback_.code = 2;
-    send_feedback_token_.publish(token_feedback_);
-    start_logging_ = false;
-    time_to_goal = 999; 
-  }
+  // std::cout << "remaining_time_to_goal " << remaining_time_to_goal << std::endl;
+  // std::cout << "time_to_goal " << time_to_goal << std::endl;
 
-  if(token_updated){
-    
-    double tc = 0.5;
-    if(set_params_)
-      tc = 2.5;
+  if(!goal_cancelled){
 
-    if(current_token_.next.size()!=0){
-      if(time_to_goal < tc){
-        roxanne_rosjava_msgs::TokenExecution c_token; 
-        c_token.tokenId = current_token_.tokenId + 1;
-        c_token.token = current_token_.next[1];
-        if(set_params_)
-          this->setParams(c_token);
-        token_updated = false;
+    if(remaining_time_to_goal < time_to_goal){
+      MB_action_client.cancelAllGoals();
+      token_feedback_.tokenId = current_token_.tokenId;
+      token_feedback_.code = 1;
+      send_feedback_token_.publish(token_feedback_);
+      start_logging_ = false;
+      time_to_goal = 99;
+      std::cout << "Cancelled the goal" << std::endl;
+      goal_cancelled = true;
+    }
 
-        if(continuous_){
-          start_logging_ = false;
-          this->sendGoalToBase(c_token);
-          token_feedback_.tokenId = current_token_.tokenId;
-          token_feedback_.code = 0;
-          send_feedback_token_.publish(token_feedback_);
-          time_to_goal = 999;
+    if(token_updated){
+      
+      double tc = 0.5;
+      if(set_params_)
+        tc = 2.5;
+
+      if(current_token_.next.size()!=0){
+        if(time_to_goal < tc){
+          roxanne_rosjava_msgs::TokenExecution c_token; 
+          c_token.tokenId = current_token_.tokenId + 1;
+          c_token.token = current_token_.next[1];
+          if(set_params_)
+            this->setParams(c_token);
+          token_updated = false;
+
+          if(continuous_){
+            start_logging_ = false;
+            this->sendGoalToBase(c_token);
+            token_feedback_.tokenId = current_token_.tokenId;
+            token_feedback_.code = 0;
+            send_feedback_token_.publish(token_feedback_);
+            time_to_goal = 99;
+          }
         }
       }
+      else
+        prev_token_exist = false;
     }
-    else
-      prev_token_exist = false;
-  }
 
-  last_recorded = ros::Time::now();
+    last_recorded = ros::Time::now();
+  }
 }
 
 void PlatinumToCohan::doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result){
-  ROS_INFO("Goal Reached!");
-  token_feedback_.tokenId = current_token_.tokenId;
-  token_feedback_.code = 0;
-  send_feedback_token_.publish(token_feedback_);
-  start_logging_ = false;
-  time_to_goal = 999;
+  if(!goal_cancelled){
+    ROS_INFO("Goal Reached!");
+    token_feedback_.tokenId = current_token_.tokenId;
+    token_feedback_.code = 0;
+    send_feedback_token_.publish(token_feedback_);
+    start_logging_ = false;
+    time_to_goal = 99;
+  }
 }
 
 void PlatinumToCohan::feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback){

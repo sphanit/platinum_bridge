@@ -131,7 +131,7 @@ private:
   double remaining_time_to_goal;
   double time_to_goal;
   ros::Time last_recorded;
-  bool continuous_;
+  bool continuous_, goal_cancelled;
 
 };
 
